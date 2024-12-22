@@ -8,7 +8,7 @@ def moving_average_forecast(data, window=5, forecast_days=7):
     return forecast
 
 # Streamlit Interface
-st.title("Demand Forecasting Tool")
+st.title("Basic Time Series Forecasting with Moving Average")
 
 # Data Upload
 uploaded_file = st.file_uploader("Upload CSV", type="csv")
