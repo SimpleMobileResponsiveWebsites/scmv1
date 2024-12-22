@@ -19,16 +19,31 @@ if uploaded_file:
     data['Date'] = pd.to_datetime(data['Date'])
     data.set_index('Date', inplace=True)
 
-    # Filter Product
-    selected_product = st.selectbox('Select a Product', data['Product'].unique())
-    product_data = data[data['Product'] == selected_product]
+    # Select Multiple Products
+    selected_products = st.multiselect('Select Products', data['Product'].unique())
 
-    # Forecast Future Sales
-    forecast_days = st.slider('Forecast Days', min_value=1, max_value=30, value=7)
-    forecast = moving_average_forecast(product_data, window=5, forecast_days=forecast_days)
+    if selected_products:
+        forecast_days = st.slider('Forecast Days', min_value=1, max_value=30, value=7)
 
-    # Display Historical Data and Forecast Together
-    st.line_chart({
-        'Historical Sales': product_data['Sales'],
-        'Forecasted Sales': pd.Series(forecast, index=pd.date_range(product_data.index[-1], periods=forecast_days, freq='D'))
-    })
+        # Prepare data for multiple products
+        historical_data = {}
+        forecast_data = {}
+
+        for product in selected_products:
+            product_data = data[data['Product'] == product]
+            forecast = moving_average_forecast(product_data, window=5, forecast_days=forecast_days)
+
+            # Store historical and forecast data
+            historical_data[product] = product_data['Sales']
+            forecast_data[product] = pd.Series(
+                forecast, 
+                index=pd.date_range(product_data.index[-1], periods=forecast_days, freq='D')
+            )
+
+        # Combine historical and forecast data into one chart
+        combined_data = {}
+        for product in selected_products:
+            combined_data[f"{product} - Historical Sales"] = historical_data[product]
+            combined_data[f"{product} - Forecasted Sales"] = forecast_data[product]
+
+        st.line_chart(combined_data)
