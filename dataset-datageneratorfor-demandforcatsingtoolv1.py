@@ -20,6 +20,7 @@ class DemandForecastingTool:
         """
         try:
             # Load data from the CSV file
+            st.write("Loading data...")  # Debug output
             self.data = pd.read_csv(file_path)
             
             # Check if the necessary columns exist
@@ -43,6 +44,7 @@ class DemandForecastingTool:
         """
         Filter data for a specific product and prepare features for modeling.
         """
+        st.write(f"Preprocessing data for product: {product_name}...")  # Debug output
         if self.data is None:
             st.error("Data not loaded. Please upload a file.")
             return
@@ -70,6 +72,7 @@ class DemandForecastingTool:
         """
         Train the linear regression model using the preprocessed data.
         """
+        st.write("Training model...")  # Debug output
         if hasattr(self, 'X_train') and hasattr(self, 'y_train'):
             try:
                 self.model.fit(self.X_train, self.y_train)
@@ -83,6 +86,7 @@ class DemandForecastingTool:
         """
         Evaluate the model's performance on test data.
         """
+        st.write("Evaluating model...")  # Debug output
         if hasattr(self, 'X_test') and hasattr(self, 'y_test'):
             try:
                 y_pred = self.model.predict(self.X_test)
@@ -103,6 +107,7 @@ class DemandForecastingTool:
         """
         Predict sales for a given number of days ahead.
         """
+        st.write(f"Forecasting for the next {days_ahead} days...")  # Debug output
         if hasattr(self, 'X_train'):
             try:
                 max_days = self.X_train['Days'].max()
@@ -127,6 +132,7 @@ class DemandForecastingTool:
         Plot historical sales data and forecasted sales.
         """
         if self.data is not None and not forecast_df.empty:
+            st.write("Plotting forecast...")  # Debug output
             try:
                 # Get product-specific data
                 product_data = self.data[self.data['Product'] == product_name]
