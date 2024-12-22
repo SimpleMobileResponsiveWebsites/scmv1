@@ -35,37 +35,43 @@ if uploaded_file:
     if selected_products:
         forecast_days = st.slider('Forecast Days', min_value=1, max_value=30, value=7)
 
-        # Choose Forecasting Method
-        forecast_method = st.radio("Select Forecasting Method", ("Moving Average", "Time Series"))
-
         # Prepare data for multiple products
         historical_data = {}
-        forecast_data = {}
+        ma_forecast_data = {}
+        ts_forecast_data = {}
 
         for product in selected_products:
             product_data = data[data['Product'] == product]
 
-            if forecast_method == "Moving Average":
-                # Moving Average Forecast
-                forecast = moving_average_forecast(product_data, window=5, forecast_days=forecast_days)
-            else:
-                # Basic Time Series Forecast
-                forecast = basic_time_series_forecast(product_data, forecast_days=forecast_days)
+            # Moving Average Forecast
+            ma_forecast = moving_average_forecast(product_data, window=5, forecast_days=forecast_days)
+
+            # Basic Time Series Forecast
+            ts_forecast = basic_time_series_forecast(product_data, forecast_days=forecast_days)
 
             # Store historical and forecast data
             historical_data[product] = product_data['Sales']
-            forecast_data[product] = pd.Series(
-                forecast, 
+            ma_forecast_data[product] = pd.Series(
+                ma_forecast, 
+                index=pd.date_range(product_data.index[-1], periods=forecast_days, freq='D')
+            )
+            ts_forecast_data[product] = pd.Series(
+                ts_forecast,
                 index=pd.date_range(product_data.index[-1], periods=forecast_days, freq='D')
             )
 
         # Combine and display data dynamically
         display_historical = st.checkbox("Display Historical Data", value=True)
+        display_ma_forecast = st.checkbox("Display MA Forecast", value=True)
+        display_ts_forecast = st.checkbox("Display TS Forecast", value=True)
 
         combined_data = {}
         for product in selected_products:
             if display_historical:
                 combined_data[f"{product} - Historical Sales"] = historical_data[product]
-            combined_data[f"{product} - Forecasted Sales"] = forecast_data[product]
+            if display_ma_forecast:
+                combined_data[f"{product} - MA Forecasted Sales"] = ma_forecast_data[product]
+            if display_ts_forecast:
+                combined_data[f"{product} - TS Forecasted Sales"] = ts_forecast_data[product]
 
         st.line_chart(combined_data)
