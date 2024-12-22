@@ -12,6 +12,10 @@ class DemandForecastingTool:
     def __init__(self):
         self.model = LinearRegression()
         self.data = None  # Initialize data attribute
+        self.X_train = None
+        self.X_test = None
+        self.y_train = None
+        self.y_test = None
 
     def load_data(self, file_path):
         """
@@ -20,7 +24,7 @@ class DemandForecastingTool:
         """
         try:
             # Load data from the CSV file
-            st.write("Loading data...")  # Debug output
+            st.write("Loading data from the file...")
             self.data = pd.read_csv(file_path)
             
             # Check if the necessary columns exist
@@ -44,12 +48,12 @@ class DemandForecastingTool:
         """
         Filter data for a specific product and prepare features for modeling.
         """
-        st.write(f"Preprocessing data for product: {product_name}...")  # Debug output
         if self.data is None:
             st.error("Data not loaded. Please upload a file.")
             return
         
         try:
+            st.write(f"Preprocessing data for {product_name}...")
             product_data = self.data[self.data['Product'] == product_name]
             if product_data.empty:
                 st.error(f"No data found for product: {product_name}")
@@ -72,9 +76,9 @@ class DemandForecastingTool:
         """
         Train the linear regression model using the preprocessed data.
         """
-        st.write("Training model...")  # Debug output
-        if hasattr(self, 'X_train') and hasattr(self, 'y_train'):
+        if self.X_train is not None and self.y_train is not None:
             try:
+                st.write("Training the model...")
                 self.model.fit(self.X_train, self.y_train)
                 st.write("✅ Model training completed.")
             except Exception as e:
@@ -86,8 +90,7 @@ class DemandForecastingTool:
         """
         Evaluate the model's performance on test data.
         """
-        st.write("Evaluating model...")  # Debug output
-        if hasattr(self, 'X_test') and hasattr(self, 'y_test'):
+        if self.X_test is not None and self.y_test is not None:
             try:
                 y_pred = self.model.predict(self.X_test)
                 mae = mean_absolute_error(self.y_test, y_pred)
@@ -107,8 +110,7 @@ class DemandForecastingTool:
         """
         Predict sales for a given number of days ahead.
         """
-        st.write(f"Forecasting for the next {days_ahead} days...")  # Debug output
-        if hasattr(self, 'X_train'):
+        if self.X_train is not None:
             try:
                 max_days = self.X_train['Days'].max()
                 future_days = np.array([max_days + i for i in range(1, days_ahead + 1)]).reshape(-1, 1)
@@ -132,7 +134,6 @@ class DemandForecastingTool:
         Plot historical sales data and forecasted sales.
         """
         if self.data is not None and not forecast_df.empty:
-            st.write("Plotting forecast...")  # Debug output
             try:
                 # Get product-specific data
                 product_data = self.data[self.data['Product'] == product_name]
@@ -161,3 +162,35 @@ class DemandForecastingTool:
                 st.error(f"Error during plotting: {e}")
         else:
             st.error("No valid data or forecast to plot.")
+
+# Main streamlit interface to interact with
+def main():
+    st.title('Sales Forecasting Tool')
+
+    # Upload CSV file
+    uploaded_file = st.file_uploader("Upload a CSV file", type=['csv'])
+    
+    tool = DemandForecastingTool()
+
+    if uploaded_file:
+        tool.load_data(uploaded_file)
+        
+        product_name = st.selectbox("Select a product", tool.data['Product'].unique())
+        
+        if product_name:
+            tool.preprocess_data(product_name)
+        
+        if st.button("Train Model"):
+            tool.train_model()
+        
+        if st.button("Evaluate Model"):
+            tool.evaluate_model()
+        
+        days_ahead = st.number_input("Days Ahead for Forecast", min_value=1, max_value=30, value=7)
+        if st.button("Forecast"):
+            forecast_df = tool.forecast(days_ahead)
+            if forecast_df is not None:
+                tool.plot_forecast(product_name, forecast_df)
+
+if __name__ == "__main__":
+    main()
