@@ -1,3 +1,4 @@
+# Import necessary libraries
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -114,4 +115,22 @@ class DemandForecastingTool:
             try:
                 product_data = self.data[self.data['Product'] == product_name]
                 plt.figure(figsize=(10, 6))
-                plt.plot(product_data['Date'], pr
+
+                # Plot the historical sales data
+                plt.plot(product_data['Date'], product_data['Sales'], label='Historical Sales', color='blue')
+
+                # Plot the forecasted sales
+                forecast_dates = pd.date_range(start=product_data['Date'].max(), periods=len(forecast_df) + 1, freq='D')[1:]
+                plt.plot(forecast_dates, forecast_df['Predicted Sales'], label='Forecasted Sales', color='red', linestyle='--')
+
+                plt.xlabel('Date')
+                plt.ylabel('Sales')
+                plt.title(f'Sales Forecast for {product_name}')
+                plt.legend()
+                plt.grid(True)
+                plt.xticks(rotation=45)
+                plt.tight_layout()
+
+                st.pyplot(plt)  # Display the plot in Streamlit
+            except Exception as e:
+                st.error(f"Error during plotting: {e}")
