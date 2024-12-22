@@ -19,11 +19,23 @@ class DemandForecastingTool:
         The CSV file should have columns: 'Date', 'Product', 'Sales'
         """
         try:
+            # Load data from the CSV file
             self.data = pd.read_csv(file_path)
+            
+            # Check if the necessary columns exist
+            if not {'Date', 'Product', 'Sales'}.issubset(self.data.columns):
+                st.error("CSV file must contain 'Date', 'Product', and 'Sales' columns.")
+                return
+
+            # Convert 'Date' to datetime and handle errors gracefully
             self.data['Date'] = pd.to_datetime(self.data['Date'], errors='coerce')
-            self.data.dropna(subset=['Date', 'Sales'], inplace=True)  # Handle invalid dates or missing values
+
+            # Drop rows with missing or invalid values in 'Date' or 'Sales'
+            self.data.dropna(subset=['Date', 'Sales'], inplace=True)
             self.data.sort_values(by='Date', inplace=True)
+            
             st.write("✅ Data loaded successfully.")
+            st.write(self.data.head())  # Show the first few rows for confirmation
         except Exception as e:
             st.error(f"Error loading data: {e}")
 
@@ -41,11 +53,14 @@ class DemandForecastingTool:
                 st.error(f"No data found for product: {product_name}")
                 return
 
+            # Convert dates to days since the first date
             product_data['Days'] = (product_data['Date'] - product_data['Date'].min()).dt.days
 
+            # Prepare features (X) and target (y)
             X = product_data[['Days']]
             y = product_data['Sales']
 
+            # Split the data into training and test sets
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=0.2, random_state=42)
             st.write(f"✅ Data preprocessed for product: {product_name}")
         except Exception as e:
@@ -113,16 +128,20 @@ class DemandForecastingTool:
         """
         if self.data is not None and not forecast_df.empty:
             try:
+                # Get product-specific data
                 product_data = self.data[self.data['Product'] == product_name]
-                plt.figure(figsize=(10, 6))
-
+                
                 # Plot the historical sales data
+                plt.figure(figsize=(10, 6))
                 plt.plot(product_data['Date'], product_data['Sales'], label='Historical Sales', color='blue')
 
-                # Plot the forecasted sales
+                # Generate forecast dates
                 forecast_dates = pd.date_range(start=product_data['Date'].max(), periods=len(forecast_df) + 1, freq='D')[1:]
+                
+                # Plot the forecasted sales
                 plt.plot(forecast_dates, forecast_df['Predicted Sales'], label='Forecasted Sales', color='red', linestyle='--')
 
+                # Add labels, title, and grid
                 plt.xlabel('Date')
                 plt.ylabel('Sales')
                 plt.title(f'Sales Forecast for {product_name}')
@@ -134,3 +153,5 @@ class DemandForecastingTool:
                 st.pyplot(plt)  # Display the plot in Streamlit
             except Exception as e:
                 st.error(f"Error during plotting: {e}")
+        else:
+            st.error("No valid data or forecast to plot.")
