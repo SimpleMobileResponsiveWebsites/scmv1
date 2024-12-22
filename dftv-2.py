@@ -20,58 +20,57 @@ def basic_time_series_forecast(data, forecast_days=7):
 # Streamlit Application
 st.title("Simplified Demand Forecasting Tool")
 
-# Upload CSV File
-uploaded_file = st.file_uploader("Upload your sales data CSV file", type="csv")
+# Upload CSV File for Historical Data
+uploaded_historical_file = st.file_uploader("Upload your historical sales data CSV file", type="csv")
 
-if uploaded_file:
-    # Load and preprocess data
-    data = pd.read_csv(uploaded_file)
-    data['Date'] = pd.to_datetime(data['Date'])
-    data.set_index('Date', inplace=True)
+# Upload CSV File for Forecasted Data (Optional)
+uploaded_forecast_file = st.file_uploader("Upload your forecasted sales data CSV file (Optional)", type="csv")
+
+if uploaded_historical_file:
+    # Load and preprocess historical data
+    historical_data = pd.read_csv(uploaded_historical_file)
+    historical_data['Date'] = pd.to_datetime(historical_data['Date'])
+    historical_data.set_index('Date', inplace=True)
 
     # Select Multiple Products
-    selected_products = st.multiselect('Select Products', data['Product'].unique())
+    selected_products = st.multiselect('Select Products', historical_data['Product'].unique())
 
     if selected_products:
         forecast_days = st.slider('Forecast Days', min_value=1, max_value=30, value=7)
 
+        # Allow users to select forecast method
+        forecast_method = st.radio("Select Forecasting Method", ("Moving Average", "Time Series"))
+
         # Prepare data for multiple products
-        historical_data = {}
-        ma_forecast_data = {}
-        ts_forecast_data = {}
+        combined_data = {}
 
         for product in selected_products:
-            product_data = data[data['Product'] == product]
+            product_data = historical_data[historical_data['Product'] == product]
 
-            # Moving Average Forecast
-            ma_forecast = moving_average_forecast(product_data, window=5, forecast_days=forecast_days)
-
-            # Basic Time Series Forecast
-            ts_forecast = basic_time_series_forecast(product_data, forecast_days=forecast_days)
+            # Generate forecasts based on selected method
+            if forecast_method == "Moving Average":
+                forecast = moving_average_forecast(product_data, window=5, forecast_days=forecast_days)
+            else:
+                forecast = basic_time_series_forecast(product_data, forecast_days=forecast_days)
 
             # Store historical and forecast data
-            historical_data[product] = product_data['Sales']
-            ma_forecast_data[product] = pd.Series(
-                ma_forecast, 
-                index=pd.date_range(product_data.index[-1], periods=forecast_days, freq='D')
-            )
-            ts_forecast_data[product] = pd.Series(
-                ts_forecast,
+            combined_data[f"{product} - Historical Sales"] = product_data['Sales']
+            combined_data[f"{product} - Forecasted Sales"] = pd.Series(
+                forecast,
                 index=pd.date_range(product_data.index[-1], periods=forecast_days, freq='D')
             )
 
-        # Combine and display data dynamically
-        display_historical = st.checkbox("Display Historical Data", value=True)
-        display_ma_forecast = st.checkbox("Display MA Forecast", value=True)
-        display_ts_forecast = st.checkbox("Display TS Forecast", value=True)
-
-        combined_data = {}
-        for product in selected_products:
-            if display_historical:
-                combined_data[f"{product} - Historical Sales"] = historical_data[product]
-            if display_ma_forecast:
-                combined_data[f"{product} - MA Forecasted Sales"] = ma_forecast_data[product]
-            if display_ts_forecast:
-                combined_data[f"{product} - TS Forecasted Sales"] = ts_forecast_data[product]
-
+        # Display the combined data
         st.line_chart(combined_data)
+
+        # If a forecasted file is uploaded, combine user-provided forecasts
+        if uploaded_forecast_file:
+            forecast_data = pd.read_csv(uploaded_forecast_file)
+            forecast_data['Date'] = pd.to_datetime(forecast_data['Date'])
+            forecast_data.set_index('Date', inplace=True)
+
+            for product in selected_products:
+                product_forecast_data = forecast_data[forecast_data['Product'] == product]
+                combined_data[f"{product} - User Forecasted Sales"] = product_forecast_data['Sales']
+
+            st.line_chart(combined_data)
