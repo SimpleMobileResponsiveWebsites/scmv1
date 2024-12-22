@@ -18,7 +18,7 @@ def basic_time_series_forecast(data, forecast_days=7):
     return [forecast] * forecast_days
 
 # Streamlit Application
-st.title("Simplified Demand Forecasting Tool")
+st.title("Time Series Forecasting with Moving Average")
 
 # Upload CSV File for Historical Data
 uploaded_historical_file = st.file_uploader("Upload your historical sales data CSV file", type="csv")
