@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Define a function to allocate resources
 def allocate_resources(demand, available_resources):
@@ -35,6 +36,10 @@ available_resources = {}
 for resource in resources:
     available_resources[resource] = st.number_input(f"Available {resource}", min_value=0, value=0)
 
+# Initialize allocation and remaining demand to empty dicts
+allocation = {}
+remaining_demand = {}
+
 # Button to perform resource allocation
 if st.button("Allocate Resources"):
     allocation, remaining_demand = allocate_resources(demand, available_resources)
@@ -50,9 +55,11 @@ if st.button("Allocate Resources"):
     st.write(remaining_demand_df)
 
 # Optionally, add some visualizations
-import matplotlib.pyplot as plt
-
 def plot_allocation(allocation, remaining_demand):
+    if not allocation:  # Check if allocation is empty (i.e., no resources allocated yet)
+        st.warning("Please click 'Allocate Resources' first.")
+        return
+    
     labels = list(allocation.keys())
     allocated_values = list(allocation.values())
     remaining_values = list(remaining_demand.values())
