@@ -161,8 +161,12 @@ if uploaded_file is not None:
         if st.button("Preprocess Data"):
             tool.preprocess_data(product_name)
 
+        # Ensure that training only occurs after preprocessing
         if st.button("Train Model"):
-            tool.train_model()
+            if hasattr(tool, 'X_train') and hasattr(tool, 'y_train') and not tool.X_train.empty and not tool.y_train.empty:
+                tool.train_model()
+            else:
+                st.write("Please preprocess the data first.")
 
         if st.button("Evaluate Model"):
             tool.evaluate_model()
